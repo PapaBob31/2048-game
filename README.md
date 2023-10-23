@@ -7,3 +7,5 @@ This is a Recreation of the 2048 game built with **React** and **Typescript**
 - Start production server once done with installation with ```npm run dev```
 
 This project was scaffolded with [vite](https://vitejs.dev)
+
+You can visit the live site [here](https://2o48-game.netlify.app)
