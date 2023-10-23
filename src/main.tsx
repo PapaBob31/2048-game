@@ -46,7 +46,7 @@ function renderedTileData(index: number, class_name: string): tileData {
 }
 
 
-function createTilesHTML(gameData: tileData[], updateState: ()=>void) {
+function createTilesHTML(gameData: tileData[], updateState: ()=>void, willMerge: {current: boolean}) {
 	let addedCallback = false
 	let jsx = gameData.map((data) => {
 		if (!data){return null}
@@ -54,6 +54,7 @@ function createTilesHTML(gameData: tileData[], updateState: ()=>void) {
 
 		if (data.addedToIndex !== -1 && !addedCallback){
 			addedCallback = true;
+			willMerge.current = true;
 			// updateState Callback only added to one tile and the function will be called once to update all..
 			// ..tiles that needs an update since all transitioning elements will finish transition at the same time
 			return <div key={data.index} className={class_attr} onTransitionEnd={updateState}>{data.content}</div>
@@ -133,9 +134,10 @@ function Main() {
 	// Each element represents a specific position/cell on the grid and stores the index to a tile data in renderedTiles state variable.
 	const possibleTilePos = useRef(JSON.parse(localStorage.getItem('tilePositions') as string) || Array(16));
 	const swipeStart = useRef({x: 0, y: 0})
+	const tilesWillMerge = useRef(false) // used to indicate that at least two tiles will merge after sliding.
 
 	const moveEvents = useRef<"up"|"left"|"down"|"right"|null>(null);
-	const gameStart = useRef(false)
+	const gameStart = useRef(false) // Ref hook indicating initial start of game
 	let tilesData = JSON.parse(localStorage.getItem('tilesData') as string) || [];
 
 	function updateTilesData(tiles_data: tileData[], newTile: boolean) {
@@ -175,23 +177,34 @@ function Main() {
 	useEffect(()=> {
 		document.addEventListener("keyup", keyEventHandler);
 		checkIfGameOver();
-		localStorage.setItem("score", scores.newScore.toString());
+		if (gameOver) {
+			localStorage.removeItem("score");
+			localStorage.removeItem("tilesData")
+			localStorage.removeItem("tilePositions")
+			localStorage.removeItem("emptyIndexes")
+		}else {
+			localStorage.setItem("score", scores.newScore.toString());
+			localStorage.setItem("tilesData", JSON.stringify(renderedTiles))
+			localStorage.setItem("tilePositions", JSON.stringify(possibleTilePos.current))
+			localStorage.setItem("emptyIndexes", JSON.stringify(emptyTileIndexes.current))
+		}
 		localStorage.setItem("best-score", scores.bestScore.toString());
-		localStorage.setItem("tilesData", JSON.stringify(renderedTiles))
-		localStorage.setItem("tilePositions", JSON.stringify(possibleTilePos.current))
-		localStorage.setItem("emptyIndexes", JSON.stringify(emptyTileIndexes.current))
 		return () => document.removeEventListener("keyup", keyEventHandler);
-	}, [renderedTiles, scores, emptyTileIndexes, possibleTilePos])
+	}, [renderedTiles, scores, emptyTileIndexes, possibleTilePos, gameOver])
 
 
+	// Checks if there's at least two tiles left that can be merged else game over.
 	function checkIfGameOver(){
 		if (renderedTiles.length < 16){
 			return;
 		}
-		let index: number = -1; //default values
-		let indexBefore: number = -1; //default values
-		let indexUnder: number = -1; //default values
-		for (let i=0; i<12; i+=4) {
+		if (tilesWillMerge.current){ // Some tiles content are not in their final value yet so checking them is invalid
+			return;
+		}
+		let index: number = -1; // index of a tile
+		let indexBefore: number = -1; // index of tile before a tile. -1 is placeholder value
+		let indexUnder: number = -1; // index of tile under a tile. -1 is placeholder value
+		for (let i=0; i<16; i+=4) {
 			for (let j=i; j<(i+4); j++) { // loop through each horizontal row
 				index = possibleTilePos.current[j]
 				if (index === null || index === undefined) {return;}
@@ -320,6 +333,7 @@ function Main() {
 				})
 			}
 		}
+		tilesWillMerge.current = false;
 		setRenderedTiles(newData);
 	}
 
@@ -365,7 +379,7 @@ function Main() {
 	      <span className="horz-2 vert-4"></span>
 	      <span className="horz-3 vert-4"></span>
 	      <span className="horz-4 vert-4"></span>
-      	{createTilesHTML(renderedTiles, updateTileState)}
+      	{createTilesHTML(renderedTiles, updateTileState, tilesWillMerge)}
       </section>
       <article>
       	<p>
