@@ -40,7 +40,7 @@ function renderedTileData(index: number, class_name: string): tileData {
 	return {
 		index: index,
 		className: class_name,
-		content: Math.random() >= 0.2 ? 2 : 4,
+		content: 1024, //Math.random() >= 0.2 ? 2 : 4,
 		addedToIndex: -1, // index of tile it will be added to if any, else -1;
 	}
 }
@@ -188,25 +188,26 @@ function Main() {
 		if (renderedTiles.length < 16){
 			return;
 		}
-		let index: number = -1;
-		let indexBefore: number = -1;
-		let indexUnder: number = -1;
-		for (let i=0; i<16; i++) {
-			index = possibleTilePos.current[i]
-			
-			if (index === null || index === undefined) {return;}
-			if (i !== 0) {
-				indexBefore = possibleTilePos.current[i-1]
-				if (indexBefore === null || indexBefore === undefined) {return;}
-				if (renderedTiles[index].content === renderedTiles[indexBefore].content) {
-					return;
+		let index: number = -1; //default values
+		let indexBefore: number = -1; //default values
+		let indexUnder: number = -1; //default values
+		for (let i=0; i<12; i+=4) {
+			for (let j=i; j<(i+4); j++) { // loop through each horizontal row
+				index = possibleTilePos.current[j]
+				if (index === null || index === undefined) {return;}
+				if (j !== i) { // loop isn't at the beginning of the row
+					indexBefore = possibleTilePos.current[j-1]
+					if (indexBefore === null || indexBefore === undefined) {return;}
+					if (renderedTiles[index].content === renderedTiles[indexBefore].content) {
+						return;
+					}
 				}
-			}
-			if (i<12) {
-				indexUnder = possibleTilePos.current[i+4]
-				if (indexUnder === null || indexUnder === undefined) {return;}
-				if (renderedTiles[index].content === renderedTiles[indexUnder].content) {
-					return;
+				if (j<12) {
+					indexUnder = possibleTilePos.current[j+4]
+					if (indexUnder === null || indexUnder === undefined) {return;}
+					if (renderedTiles[index].content === renderedTiles[indexUnder].content) {
+						return;
+					}
 				}
 			}
 		}
