@@ -63,6 +63,7 @@ section {
   border-radius: 5px;
   font-size: 2rem;
   margin-top: 25px;
+  touch-action: none;
 }
 section span, section div {
   position: absolute;
@@ -106,9 +107,6 @@ section div {
 #game-over-cover {
   position: absolute;
   display: none;
-  flex-direction: column;
-  align-content: center;
-  flex-wrap: nowrap;
   top: 0;
   left: 0;
   width: 100%;
@@ -118,6 +116,10 @@ section div {
   text-align: center;
   z-index: 1;
   background-color: rgba(255, 255, 255, 0.6);
+  animation: unset;
+  opacity: 0;
+  transform: unset;
+  visibility: unset;
 }
 #game-over-cover button {
   width: 15%;
@@ -135,6 +137,13 @@ section div {
 
 #game-over-cover.show {
   display: flex;
+  flex-direction: column;
+  align-content: center;
+  flex-wrap: nowrap;
+  transition-property: opacity;
+  transition-delay: .3s;
+  transition-duration: .5s;
+  opacity: 1;
 }
 
 .color-2 {
@@ -243,7 +252,7 @@ a {
   section span, section div {
     min-width: unset;
     min-height: unset;
-    font-size: 1.8rem;
+    font-size: 2rem;
   }
   .color-128, .color-256, .color-512, .color-1024, .color-2048{
     font-size: 1.6rem;
