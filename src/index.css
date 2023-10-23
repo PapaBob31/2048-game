@@ -1,0 +1,249 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background-color: #faf8ef;
+  color: #776e65;
+  font-weight: 400;
+}
+main {
+  width: 30vw;
+  margin: 0 auto;
+  min-width: 480px;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+.heading h1 {
+  font-size: 5rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+}
+.container {
+  display: flex;
+  justify-content: space-between;
+}
+.small-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px;
+  background-color: #bbada0;
+  color: #fff;
+  border-radius: 5px;
+  margin-left: 10px;
+}
+.small-container b {
+  text-align: center;
+}
+.container button {
+  width: 20%;
+  min-width: 120px;
+  outline: none;
+  background-color: #8f7a66;
+  color: #f9f6f2;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+#quick-info p {
+  margin: 0;
+}
+section {
+  position: relative;
+  width: 30vw;
+  height: 30vw;
+  min-width: 480px;
+  min-height: 480px;
+  background-color: #bbada0;
+  border-radius: 5px;
+  font-size: 2rem;
+  margin-top: 25px;
+}
+section span, section div {
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  min-width: 96px;
+  min-height: 96px;
+  border-radius: 5px;
+}
+section span {
+  background-color: rgba(238,228,218,.35);
+}
+section div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  animation-duration: .2s;
+  animation-name: popup;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+  transition-property: left, top;
+  transition-duration: .2s; /*.5*/
+  transform: scale(0.6);
+  visibility: hidden;
+  font-size: 3rem;
+  font-weight: bold;
+}
+.new {
+  animation-delay: .2s;
+}
+@keyframes popup  {
+  0% {
+    visibility: visible;
+  }
+  100% {
+    transform: scale(1);
+    visibility: visible;
+  }
+}
+#game-over-cover {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  align-content: center;
+  flex-wrap: nowrap;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  z-index: 1;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+#game-over-cover button {
+  width: 15%;
+  margin: 0 auto;
+  min-width: 120px;
+  outline: none;
+  background-color: #8f7a66;
+  color: #f9f6f2;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+#game-over-cover.show {
+  display: flex;
+}
+
+.color-2 {
+  background-color: #eee4da;
+}
+.color-4 {
+  background-color: #ede0c8;
+}
+.color-8 {
+  background-color: #f2b179;
+  color: #f9f6f2;
+}
+.color-16 {
+  background-color: #f59563;
+  color: #f9f6f2;
+}
+.color-32 {
+  background-color: #ff7c55;
+  color: #f9f6f2;
+}
+.color-64 {
+  background-color: #ff6565;
+  color: #f9f6f2;
+}
+.color-128 {
+  background-color: #edcf72;
+  color: #f9f6f2;
+  font-size: 2.5rem;
+}
+.color-256 {
+  background-color: #efcc00;
+  color: #f9f6f2;
+  font-size: 2.5rem;
+}
+.color-512 {
+  background-color: #fca924;
+  color: #f9f6f2;
+  font-size: 2.5rem;
+}
+.color-1024 {
+  background-color: #eaaa24;
+  color: #f9f6f2;
+  font-size: 2rem;
+}
+.color-2048 {
+  background-color: #ffca53;
+  color: #f9f6f2;
+  font-size: 2rem;
+}
+#btn-group {
+  width: 100%;
+  position: absolute;
+  top: 28vw;
+}
+.horz-1 {
+  left: 4%;
+}
+.horz-2 {
+  left: 28%;
+}
+.horz-3 {
+  left: 52%;
+}
+.horz-4 {
+  left: 76%;
+}
+.vert-1 {
+  top: 4%;
+}
+.vert-2 {
+  top: 28%;
+}
+.vert-3 {
+  top: 52%;
+}
+.vert-4 {
+  top: 76%;
+}
+
+a {
+  font-weight: bold;
+  color: #776e65;
+}
+
+@media screen and (max-width: 500px) {
+  main {
+    width: 90vw;
+    min-width: unset;
+    margin: 0 auto;
+  }
+  .heading h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+  }
+  #quick-info p {
+    max-width: 80%;
+  }
+  section {
+    width: 90vw;
+    height: 90vw;
+    min-width: unset;
+    min-height: unset;
+  }
+  section span, section div {
+    min-width: unset;
+    min-height: unset;
+    font-size: 1.5rem !important;
+  }
+}
