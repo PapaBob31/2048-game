@@ -40,7 +40,7 @@ function renderedTileData(index: number, class_name: string): tileData {
 	return {
 		index: index,
 		className: class_name,
-		content: 1024, //Math.random() >= 0.2 ? 2 : 4,
+		content: Math.random() >= 0.2 ? 2 : 4,
 		addedToIndex: -1, // index of tile it will be added to if any, else -1;
 	}
 }
