@@ -138,6 +138,7 @@ function Main() {
 
 	const moveEvents = useRef<"up"|"left"|"down"|"right"|null>(null);
 	const gameStart = useRef(false) // Ref hook indicating initial start of game
+	const playerWon = useRef(false)
 	let tilesData = JSON.parse(localStorage.getItem('tilesData') as string) || [];
 
 	function updateTilesData(tiles_data: tileData[], newTile: boolean) {
@@ -201,13 +202,18 @@ function Main() {
 		if (tilesWillMerge.current){ // Some tiles content are not in their final value yet so checking them is invalid
 			return;
 		}
-		let index: number = -1; // index of a tile
+		let index: number = -1; // index of a tile. -1 is placeholder value
 		let indexBefore: number = -1; // index of tile before a tile. -1 is placeholder value
 		let indexUnder: number = -1; // index of tile under a tile. -1 is placeholder value
 		for (let i=0; i<16; i+=4) {
 			for (let j=i; j<(i+4); j++) { // loop through each horizontal row
 				index = possibleTilePos.current[j]
 				if (index === null || index === undefined) {return;}
+				if (renderedTiles[index].content === 2048) {
+					playerWon.current = true;
+					setGameOver(true);
+					return;
+				}
 				if (j !== i) { // loop isn't at the beginning of the row
 					indexBefore = possibleTilePos.current[j-1]
 					if (indexBefore === null || indexBefore === undefined) {return;}
@@ -232,6 +238,7 @@ function Main() {
 		possibleTilePos.current = Array(16);
 		emptyTileIndexes.current = [];
 		moveEvents.current = null;
+		playerWon.current = false;
 		updateTilesData(tilesData, false);
 		updateTilesData(tilesData, false);
 		setRenderedTiles(tilesData)
@@ -360,8 +367,8 @@ function Main() {
 			</div>
       <section onTouchStart={touchStartHandler} onTouchEnd={touchEndHandler}>
       	<div id="game-over-cover" className={gameOver ? "show" : ""}>
-      		<p>Game Over!</p>
-      		<button onClick={setNewGameData}>Try again</button>
+      		<p>{playerWon.current ? "You Win!" : "You Lost!"}</p>
+      		<button onClick={setNewGameData}>Play again</button>
       	</div>
 	      <span className="horz-1 vert-1"></span>
 	      <span className="horz-2 vert-1"></span>
@@ -395,6 +402,11 @@ function Main() {
 	      	Based on <a href="https://play2048.co/">2048</a> by <a href="http://gabrielecirulli.com/">Gabriele Cirulli</a>
 	      </p>
       </article>
+      <div id="footer-div">
+	      Contact me:
+	      <a href="https://twitter.com/PapaBob31">Twitter</a>
+	      <a href="https://github.com/PapaBob31">Github</a>
+	    </div>
 		</>
 	)
 }
