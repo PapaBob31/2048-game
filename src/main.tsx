@@ -177,7 +177,7 @@ function Main() {
 
 	useEffect(()=> {
 		document.addEventListener("keyup", keyEventHandler);
-		checkIfGameOver();
+		if (!gameOver) checkIfGameOver();
 		if (gameOver) {
 			localStorage.removeItem("score");
 			localStorage.removeItem("tilesData")
@@ -209,11 +209,6 @@ function Main() {
 			for (let j=i; j<(i+4); j++) { // loop through each horizontal row
 				index = possibleTilePos.current[j]
 				if (index === null || index === undefined) {return;}
-				if (renderedTiles[index].content === 2048) {
-					playerWon.current = true;
-					setGameOver(true);
-					return;
-				}
 				if (j !== i) { // loop isn't at the beginning of the row
 					indexBefore = possibleTilePos.current[j-1]
 					if (indexBefore === null || indexBefore === undefined) {return;}
@@ -329,6 +324,10 @@ function Main() {
 				newData[tileToBeDoubledIndex].content *= 2;
 				newData[i] = undefined;
 				emptyTileIndexes.current.push(i);
+
+				if (newData[tileToBeDoubledIndex].content === 2048) {
+					playerWon.current = true;
+				}
 				
 				setScores((scores) => {
 					let new_score = scores.newScore + newData[tileToBeDoubledIndex].content
@@ -341,6 +340,7 @@ function Main() {
 			}
 		}
 		tilesWillMerge.current = false;
+		if (playerWon.current) setGameOver(true);
 		setRenderedTiles(newData);
 	}
 
