@@ -4,7 +4,7 @@ body {
   background-color: #faf8ef;
   color: #776e65;
 }
-main {
+main, footer, article {
   width: 30vw;
   margin: 0 auto;
   min-width: 480px;
@@ -233,7 +233,7 @@ a {
 }
 
 @media screen and (max-width: 500px) {
-  main {
+  main, footer, article {
     width: 90vw;
     min-width: unset;
     margin: 0 auto;
