@@ -43,19 +43,25 @@ function Header({scores} : {scores: any}) {
 
 
 function GameTiles({tilesData, updateState}) {
-	let renderedTiles = Array(16);
+	let renderedTiles: any[] = [
+		null, null, null, null, null, null, null, null,
+		null, null, null, null, null, null, null, null
+	];
 
 	for (let i=0; i<16; i++) {
 		let data = tilesData[i];
-		renderedTiles[i] = null // can't fw sparse arrays
-		if (data.indexOfTileMergedWith > -1) {
-			let di = data.indexOfTileMergedWith  // destination index/position during animation
-			renderedTiles[i] = <div key={data.renderingIndex} className={`${tilesData[di].classAttr} ${colors[data.content]}`}>{data.content}</div>
+		if (data.combinedTileData) {
+			let mergedData = data.combinedTileData
+			renderedTiles[data.renderingIndex] = (
+				<div key={data.renderingIndex} className={`${data.classAttr} ${colors[data.content]}`} onTransitionEnd={updateState}>{data.content}</div>
+			)
+			renderedTiles[mergedData.renderingIndex] = (
+				<div key={mergedData.renderingIndex} className={`${data.classAttr} ${colors[mergedData.content]}`} onTransitionEnd={updateState}>{mergedData.content}</div>
+			)
 		}else if (data.renderingIndex > -1) {
-			renderedTiles[i] = <div key={data.renderingIndex} className={`${data.classAttr} ${colors[data.content]}`}>{data.content}</div>
+			renderedTiles[data.renderingIndex] = <div key={data.renderingIndex} className={`${data.classAttr} ${colors[data.content]}`} onTransitionEnd={updateState}>{data.content}</div>
 		}
 	}
-	// console.log(tilesData)
 	return <>{renderedTiles}</>
 }
 
@@ -79,9 +85,8 @@ function moveTilesByTouch(event: TouchEvent, diffX: number, diffY: number, setUp
 }
 
 function updateTilesMovementData(direction: "up"|"down"|"left"|"right", tilesData) {
-	let startingIndex: number, rowStep: number, tileStep: number, n: number;
+	let startingIndex: number, rowStep: number, tileStep: number;
 	let changeOccured = false;
-	// console.log(0, direction, tilesData)
 
 	switch (direction) {
 		case "up":
@@ -106,37 +111,37 @@ function updateTilesMovementData(direction: "up"|"down"|"left"|"right", tilesDat
 	}
 
 	for (let i=0; i<4; i++) {
-		n = startingIndex;
-		let counter = 0;
-		let indexScte = null // index of space closest to the edge
-		let indexTcte = null // index of tile closest to the edge [that's unmerged]
+		let edgeIndex = startingIndex;
+		let n = startingIndex + tileStep; // starts iteration at position after the position at the edge
+		let counter = 0;		
 
-		while (counter < 4) {
-			if (tilesData[n].renderingIndex > -1) {
-				if (indexTcte === null && indexScte === null) {
-					indexTcte = n
-				}else if (indexTcte !== null && (tilesData[n].content === tilesData[indexTcte].content)) {
-					tilesData[n].indexOfTileMergedWith = indexTcte;
-					indexScte === null && (indexScte = n);
-					indexTcte = null
-					changeOccured = true;
-					console.log(indexTcte)
-				}else if (indexScte !== null) { // second check prevents tiles just merged from going to the free space the same tile left behind
-					tilesData[indexScte].renderingIndex = tilesData[n].renderingIndex
-					tilesData[indexScte].content = tilesData[n].content
+		while (counter < 3) {
+			if (tilesData[n].content) {
+				if (tilesData[edgeIndex].content === tilesData[n].content) {
+					tilesData[edgeIndex].combinedTileData = {
+						renderingIndex: tilesData[n].renderingIndex, 
+						content: tilesData[n].content
+					}
+				}else {
+					if (tilesData[edgeIndex].content) {
+						edgeIndex+=tileStep;
+					}
+					tilesData[edgeIndex].renderingIndex = tilesData[n].renderingIndex;
+					tilesData[edgeIndex].content = tilesData[n].content
+				}
+				if (edgeIndex !== n) {
 					tilesData[n].renderingIndex = -1;
 					tilesData[n].content = null;
-					// console.log(tilesData[indexScte], tilesData[n]);
-					indexScte += tileStep;
 					changeOccured = true;
 				}
-			}else if (indexScte === null){
-				indexScte = n;
+				if (tilesData[edgeIndex].combinedTileData) { 
+					edgeIndex+=tileStep;
+				}
 			}
 			counter++;
 			n+=tileStep;
 		}
-		startingIndex +=rowStep;
+		startingIndex += rowStep;
 	}
 	return [tilesData, changeOccured];
 }
@@ -151,24 +156,23 @@ function generatePlaceHolders() {
 	if (randomNum1 === randomNum2) {
 		randomNum2 = (randomNum2 + 8) % 16 
 	}
-	// console.log(randomNum1, randomNum2);
 	let availRenderingSlot = 0;
 
 	for (let i=0; i<16; i++) {
 		if (i%4 == 0) {
-			htc = 1;
-			i >= 4 && vtc++;
+			vtc = 1;
+			i >= 4 && htc++;
 		}
 		tilesPositionsData.push({
 			content: [randomNum1, randomNum2].includes(i) ? (Math.random() >= 0.2 ? 2 : 4) : null,
 			classAttr: `horz-${htc} vert-${vtc}`, 
 			renderingIndex: [randomNum1, randomNum2].includes(i) ? availRenderingSlot : -1,
-			indexOfTileMergedWith: -1
+			combinedTileData: null,
 		})
 		if (i === randomNum1 || i === randomNum2) {
 			availRenderingSlot++;
 		}
-		htc++;
+		vtc++;
 	}
 	return tilesPositionsData;
 }
@@ -183,7 +187,7 @@ function Main() {
 		return () => document.removeEventListener("keyup", keyEventHandler);
 	}, [])
 
-	const freeRenderingSlots = useRef<number[]>([2]);
+	const freeRenderingSlots = useRef<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 	const data = JSON.parse(localStorage.getItem('tilesData') as string) || generatePlaceHolders()
 	const [tilesData, setTilesData] = useState(data);
 	const blockOtherEvents = useRef(false)
@@ -201,9 +205,7 @@ function Main() {
 	function addNewTileData(tilesData, emptyIndexes: number[]) {
 		let newTileIndex: number = emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)];
 		tilesData[newTileIndex].content = Math.random() >= 0.2 ? 2 : 4;
-		if (freeRenderingSlots.current.length > 1) {
-			tilesData[newTileIndex].renderingIndex = freeRenderingSlots.current.pop();
-		}else tilesData[newTileIndex].renderingIndex = freeRenderingSlots.current[0]++;
+		tilesData[newTileIndex].renderingIndex = freeRenderingSlots.current.shift();
 		return [...tilesData];
 	}
 
@@ -220,17 +222,11 @@ function Main() {
 			[newTilesData, dataChanged] = updateTilesMovementData("left", tilesData);
 		}else if (event.key === "ArrowRight") {
 			[newTilesData, dataChanged] = updateTilesMovementData("right", tilesData);
-		}else return;
-		event.preventDefault();
-		if (dataChanged) {
+		};
+		if (dataChanged) { // valid movement key was pressed and the tiles moved
+			event.preventDefault();
 			setTilesData([...newTilesData]);
 		}else blockOtherEvents.current = false;
-		
-
-		// setTimeout(()=>{
-		// 	// moveEvents.current = null
-		// 	updateTileStateAfterAnimation();
-		// }, 250);
 	}
 
 	function touchStartHandler(event: TouchEvent) {
@@ -253,19 +249,15 @@ function Main() {
 				emptyTileIndexes.push(i)
 				continue;
 			}
-			let tileIndex = tilesData[i].indexOfTileMergedWith;
-			if (tileIndex > -1) {
-				tilesData[i].content = null;
-				tilesData[i].indexOfTileMergedWith = -1;
-				freeRenderingSlots.current.push(tilesData[i].renderingIndex);
-				tilesData[i].renderingIndex = -1;
-				emptyTileIndexes.push(i)
-				tilesData[tileIndex].content *= 2;
-				if (tilesData[tileIndex].content === 2048) {
+			if (tilesData[i].combinedTileData) {
+				tilesData[i].content *= 2;
+				freeRenderingSlots.current.push(tilesData[i].combinedTileData.renderingIndex);
+				tilesData[i].combinedTileData = null;
+				if (tilesData[i].content === 2048) {
 					playerWon.current = true;
 				}
 				setScores((scores) => {
-					let new_score = scores.newScore + tilesData[tileIndex].content
+					let new_score = scores.newScore + tilesData[i].content
 					let newScoreObj = {
 						newScore: new_score,
 						bestScore: new_score > scores.bestScore ? new_score : scores.bestScore

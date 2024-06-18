@@ -198,28 +198,28 @@ section div {
   position: absolute;
   top: 28vw;
 }
-.horz-1 {
+.vert-1 {
   left: 4%;
 }
-.horz-2 {
+.vert-2 {
   left: 28%;
 }
-.horz-3 {
+.vert-3 {
   left: 52%;
 }
-.horz-4 {
+.vert-4 {
   left: 76%;
 }
-.vert-1 {
+.horz-1 {
   top: 4%;
 }
-.vert-2 {
+.horz-2 {
   top: 28%;
 }
-.vert-3 {
+.horz-3 {
   top: 52%;
 }
-.vert-4 {
+.horz-4 {
   top: 76%;
 }
 
