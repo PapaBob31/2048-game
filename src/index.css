@@ -81,21 +81,18 @@ section div {
   flex-wrap: wrap;
   justify-content: center;
   align-content: center;
+  transform: scale(0.6);
+  visibility: hidden;
   animation-duration: .2s;
   animation-name: popup;
   animation-timing-function: ease-in-out;
   animation-fill-mode: forwards;
   transition-property: left, top;
   transition-duration: .2s; /*.5*/
-  transform: scale(0.6);
-  visibility: hidden;
   font-size: 3rem;
   font-weight: bold;
 }
-.new {
-  animation-delay: .2s;
-}
-@keyframes popup  {
+@keyframes popup {
   0% {
     visibility: visible;
   }

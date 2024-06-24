@@ -42,7 +42,7 @@ function Header({scores} : {scores: any}) {
 }
 
 
-function GameTiles({tilesData, updateState}) {
+function GameTiles({tilesData}) {
 	let renderedTiles: any[] = [
 		null, null, null, null, null, null, null, null,
 		null, null, null, null, null, null, null, null
@@ -50,16 +50,18 @@ function GameTiles({tilesData, updateState}) {
 
 	for (let i=0; i<16; i++) {
 		let data = tilesData[i];
+		let key = tilesData[i].content && (`${tilesData[i].renderingIndex}-${tilesData[i].content}`);
 		if (data.combinedTileData) {
 			let mergedData = data.combinedTileData
+			let mergedDataKey = `${mergedData.renderingIndex}-${mergedData.content}`
 			renderedTiles[data.renderingIndex] = (
-				<div key={data.renderingIndex} className={`${data.classAttr} ${colors[data.content]}`} onTransitionEnd={updateState}>{data.content}</div>
+				<div key={key} className={`${data.classAttr} ${colors[data.content]}`}>{data.content}</div>
 			)
 			renderedTiles[mergedData.renderingIndex] = (
-				<div key={mergedData.renderingIndex} className={`${data.classAttr} ${colors[mergedData.content]}`} onTransitionEnd={updateState}>{mergedData.content}</div>
+				<div key={mergedDataKey} className={`${data.classAttr} ${colors[mergedData.content]}`}>{mergedData.content}</div>
 			)
 		}else if (data.renderingIndex > -1) {
-			renderedTiles[data.renderingIndex] = <div key={data.renderingIndex} className={`${data.classAttr} ${colors[data.content]}`} onTransitionEnd={updateState}>{data.content}</div>
+			renderedTiles[data.renderingIndex] = <div key={key} className={`${data.classAttr} ${colors[data.content]}`}>{data.content}</div>
 		}
 	}
 	return <>{renderedTiles}</>
@@ -147,7 +149,11 @@ function updateTilesMovementData(direction: "up"|"down"|"left"|"right", tilesDat
 }
 
 
-function generatePlaceHolders() {
+function generateInitialState() {
+	const data = JSON.parse(localStorage.getItem('tilesData') as string)
+	if (data) {
+		return data
+	}
 	let tilesPositionsData = [];
 	let htc = 1 // completes horizontal tile css class attribute
 	let vtc = 1 // completes vertical tile css class attribute
@@ -177,35 +183,85 @@ function generatePlaceHolders() {
 	return tilesPositionsData;
 }
 
+function generateNewGameState(prevGameTilesData) {
+	let newTileIndexes:number[] = [];
+
+	function getRandomIndexNotOccupied():number {
+		let randomNum = Math.floor(Math.random() * 16);
+		if (newTileIndexes.includes(randomNum)) {
+			return getRandomIndexNotOccupied();
+		}
+		return randomNum
+	}
+
+	let availRenderingSlots = [0, 1];
+	for (let i=0; i<16; i++) {
+		if (newTileIndexes.includes(i)) continue;
+		let randIndex = getRandomIndexNotOccupied();
+		prevGameTilesData[i].content = null;
+		prevGameTilesData[i].renderingIndex = -1;
+
+		if (newTileIndexes.length === 2) {
+			continue;
+		}
+		newTileIndexes.push(randIndex)
+		prevGameTilesData[randIndex].content = Math.random() > 0.2 ? 2 : 4;
+		prevGameTilesData[randIndex].renderingIndex = availRenderingSlots.pop();
+	}
+	return prevGameTilesData
+}
+
+function tilesCanStillMove(gameTilesData) {
+	for (let i=0; i<16; i++) {
+		if (i<12 && gameTilesData[i].content === gameTilesData[i+4].content) {
+			return true;
+		}
+		if (i % 4 === 3) { // 3, 7, 11, 15
+			continue;
+		}
+		if (gameTilesData[i].content === gameTilesData[i+1].content) {
+			return true
+		}
+	}
+	return false;
+}
+
+
 let score = localStorage.getItem("score")
 let best_score = localStorage.getItem("best-score")
 
 function Main() {
+	const gameOver = useRef(false)
+	const [tilesData, setTilesData] = useState(generateInitialState);
+	const freeRenderingSlots = useRef<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+	const [scores, setScores] = useState( localStorage.getItem("scores") || 
+	{newScore: score !== null ? parseInt(score) : 0,
+		bestScore: best_score !== null ? parseInt(best_score) : 0
+	})
+
 	useEffect(()=> {
 		document.addEventListener("keyup", keyEventHandler);
-		
-		return () => document.removeEventListener("keyup", keyEventHandler);
-	}, [])
+		// localStorage.setItem("scores", JSON.stringify(scores));
+		// localStorage.setItem("tilesData", JSON.stringify(tilesData))
+		// localStorage.setItem("freeRenderingSlots", JSON.stringify(freeRenderingSlots))
+		// return () => document.removeEventListener("keyup", keyEventHandler);
+	}, [tilesData])
 
-	const freeRenderingSlots = useRef<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-	const data = JSON.parse(localStorage.getItem('tilesData') as string) || generatePlaceHolders()
-	const [tilesData, setTilesData] = useState(data);
 	const blockOtherEvents = useRef(false)
 	// console.log(tilesData);
 
 	const swipeStart = useRef({x: 0, y: 0})
 	const playerWon = useRef(false)
-	// const newGame = useRef(true)
-
-	const [scores, setScores] = useState({
-		newScore: score !== null ? parseInt(score) : 0,
-		bestScore: best_score !== null ? parseInt(best_score) : 0
-	})
+	const gamePlayCount = useRef(0);
 
 	function addNewTileData(tilesData, emptyIndexes: number[]) {
 		let newTileIndex: number = emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)];
 		tilesData[newTileIndex].content = Math.random() >= 0.2 ? 2 : 4;
 		tilesData[newTileIndex].renderingIndex = freeRenderingSlots.current.shift();
+		if (freeRenderingSlots.current.length === 0 && !tilesCanStillMove(tilesData)) {
+			gameOver.current = true;
+			playerWon.current = false;
+		}
 		return [...tilesData];
 	}
 
@@ -244,11 +300,13 @@ function Main() {
 	function updateTileStateAfterAnimation(){
 		if (!blockOtherEvents.current) return;
 		let emptyTileIndexes = [];
+		let newScoreObj = {...scores};
 		for (let i=0; i<tilesData.length; i++) {
 			if (!tilesData[i].content){
 				emptyTileIndexes.push(i)
 				continue;
 			}
+			tilesData[i].classAttr = tilesData[i].classAttr.slice(0, 13)
 			if (tilesData[i].combinedTileData) {
 				tilesData[i].content *= 2;
 				freeRenderingSlots.current.push(tilesData[i].combinedTileData.renderingIndex);
@@ -256,36 +314,38 @@ function Main() {
 				if (tilesData[i].content === 2048) {
 					playerWon.current = true;
 				}
-				setScores((scores) => {
-					let new_score = scores.newScore + tilesData[i].content
-					let newScoreObj = {
-						newScore: new_score,
-						bestScore: new_score > scores.bestScore ? new_score : scores.bestScore
-					}
-					return newScoreObj;
-				})
+				newScoreObj.newScore = newScoreObj.newScore + tilesData[i].content;
+				newScoreObj.bestScore = newScoreObj.newScore > newScoreObj.bestScore ? newScoreObj.newScore : newScoreObj.bestScore
 			}
 		}
 		let newUpdatedTilesData = addNewTileData(tilesData, emptyTileIndexes);
 		blockOtherEvents.current = false;
+		setScores(newScoreObj);
 		setTilesData(newUpdatedTilesData);
 	}
 	
+	function setNewGameData() {
+		gameOver.current = false;
+		setScores({newScore: 0, bestScore: 0});
+		freeRenderingSlots.current = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+		setTilesData(generateNewGameState);
+		gamePlayCount.current++;
+	}
 
 	return (
 		<>
 			<Header scores={scores}/>
-	    {/*<div className="container">
+	    <div className="container">
 	    	<div id="quick-info">
 					<p>Join the numbers and get to the <b>2048 tile!</b></p>
 				</div>
 				<button onClick={setNewGameData}>New Game</button>
-			</div>*/}
+			</div>
       <section onTouchStart={touchStartHandler} onTouchEnd={touchEndHandler} onTransitionEnd={updateTileStateAfterAnimation}>
-      	{/*<div id="game-over-cover" className={gameOver ? "show" : ""}>
+      	<div id="game-over-cover" className={gameOver.current ? "show" : ""}>
       		<p>{playerWon.current ? "You Win!" : "You Lost!"}</p>
       		<button onClick={setNewGameData}>Play again</button>
-      	</div>*/}
+      	</div>
 	      <span className="horz-1 vert-1"></span>
 	      <span className="horz-2 vert-1"></span>
 	      <span className="horz-3 vert-1"></span>
@@ -302,7 +362,7 @@ function Main() {
 	      <span className="horz-2 vert-4"></span>
 	      <span className="horz-3 vert-4"></span>
 	      <span className="horz-4 vert-4"></span>
-      	<GameTiles tilesData={tilesData} updateState={updateTileStateAfterAnimation}/>
+      	<GameTiles tilesData={tilesData} key={gamePlayCount.current}/>
       </section>
 		</>
 	)
