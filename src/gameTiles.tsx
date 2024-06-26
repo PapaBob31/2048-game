@@ -26,7 +26,7 @@ export default function GameTiles({tilesData} : {tilesData: tileData[]}) {
 
 	for (let i=0; i<16; i++) {
 		let data = tilesData[i];
-		let key = tilesData[i].content && (`${tilesData[i].renderingIndex}-${tilesData[i].content}`);
+		let key = `${tilesData[i].renderingIndex}-${tilesData[i].content}`;
 
 		if (data.combinedTileData) { // a tile has been merged with the current tile
 			let mergedData = data.combinedTileData
@@ -37,7 +37,7 @@ export default function GameTiles({tilesData} : {tilesData: tileData[]}) {
 			renderedTiles[mergedData.renderingIndex] = (
 				<div key={mergedDataKey} className={`${data.classAttr} ${colors[mergedData.content]}`}>{mergedData.content}</div>
 			)
-		}else if (data.renderingIndex > -1) { // tile has content to be rendered
+		}else if (data.renderingIndex > -1) { // tile has content to be rendered but nor tile was merged with it
 			renderedTiles[data.renderingIndex] = <div key={key} className={`${data.classAttr} ${colors[data.content as number]}`}>{data.content}</div>
 		}
 	}

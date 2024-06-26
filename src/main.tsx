@@ -12,17 +12,15 @@ export interface tileData {
 }
 
 function moveTilesByTouch(diffX: number, diffY: number, tilesData: tileData[]) {
-	// pick the axis with the longest swipe if direction of swipe
-	// is both horizontal and vertical e.g diagonal swipe
 	let newTilesData:tileData[] = [];
 	let dataChanged = false;
-	if (Math.abs(diffX) > Math.abs(diffY)) {
+	if (Math.abs(diffX) > Math.abs(diffY)) { // user swiped horizontally on a touch screen
 		if (diffX > 20) {
 			[newTilesData, dataChanged] = updateTilesMovementData("left", tilesData);
 		}else if (diffX < -15) {
 			[newTilesData, dataChanged] = updateTilesMovementData("right", tilesData);
 		}
-	}else if (Math.abs(diffY) > Math.abs(diffX)) {
+	}else if (Math.abs(diffY) > Math.abs(diffX)) { // user swiped vertically on a touch screen
 		if (diffY > 20) {
 			[newTilesData, dataChanged] = updateTilesMovementData("up", tilesData);
 		}else if (diffY < -15) {
@@ -33,7 +31,7 @@ function moveTilesByTouch(diffX: number, diffY: number, tilesData: tileData[]) {
 	return newTilesData;
 }
 
-interface gameScores {
+export interface gameScores {
 	newScore: number,
 	bestScore: number
 }
@@ -68,18 +66,18 @@ function Main() {
 		JSON.parse(localStorage.getItem("freeRenderingSlots") as string) || [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 	);
 	const [scores, setScores] = useState( JSON.parse(localStorage.getItem("scores") as string) || {newScore: 0, bestScore: 0})
-	const blockOtherEvents = useRef(false) // flag indicating at least one tile is moving from one position to another
+	const blockMoveEvents = useRef(false) // flag that decides whether tiles should move in response to user action 
 
 	useEffect(()=> {
 		document.addEventListener("keyup", keyEventHandler);
-		if (!blockOtherEvents.current) {
+		if (!blockMoveEvents.current) {
 			// save game state across browsing sessions
 			localStorage.setItem("scores", JSON.stringify(scores));
 			localStorage.setItem("tilesData", JSON.stringify(tilesData))
 			localStorage.setItem("freeRenderingSlots", JSON.stringify(freeRenderingSlots.current))
 		}
 		return () => document.removeEventListener("keyup", keyEventHandler);
-	}, [tilesData, blockOtherEvents.current])
+	}, [tilesData, blockMoveEvents.current])
 
 
 	const swipeStart = useRef({x: 0, y: 0})
@@ -87,8 +85,10 @@ function Main() {
 	const gamePlayCount = useRef(0); // Used to force the rerender of the GameTiles component
 
 	function keyEventHandler(event: KeyboardEvent) {
-		if (blockOtherEvents.current) return; // at least one tile is moving on screen
-		blockOtherEvents.current = true; // tile movement is happening
+		if (blockMoveEvents.current)  // at least one tile is moving on screen
+			return; // prevent the processing of key presses unless moving tiles have stopped
+
+		blockMoveEvents.current = true; // tile movement is happening 
 		let dataChanged = false;
 		let newTilesData:tileData[] = [];
 		if (event.key === "ArrowUp") {
@@ -103,32 +103,36 @@ function Main() {
 		if (dataChanged) { // valid movement key was pressed and the tiles moved
 			event.preventDefault();
 			setTilesData([...newTilesData]);
-		}else blockOtherEvents.current = false;
+		}else blockMoveEvents.current = false;
 	}
 
-	function touchStartHandler(event: TouchEvent) {
+	function touchStartHandler(event: React.TouchEvent) {
 		swipeStart.current.x = event.changedTouches[0].clientX
 		swipeStart.current.y = event.changedTouches[0].clientY
 	}
 
-	function touchEndHandler(event: TouchEvent) {
-		blockOtherEvents.current = true;
-		let diffX = swipeStart.current.x - event.changedTouches[0].clientX;
-		let diffY = swipeStart.current.y - event.changedTouches[0].clientY;
+	function touchEndHandler(event: React.TouchEvent) {
+		if (blockMoveEvents.current)  // at least one tile is moving on screen
+			return; // prevent the processing of touch events unless moving tiles have stopped
+
+		blockMoveEvents.current = true;
+		let diffX = swipeStart.current.x - event.changedTouches[0].clientX; // length of swipe in the X plane
+		let diffY = swipeStart.current.y - event.changedTouches[0].clientY; // length of swipe in the Y plane
 		let newData = moveTilesByTouch(diffX, diffY, tilesData);
 		if (newData.length > 0) {
 			setTilesData([...newData])
-		}else blockOtherEvents.current = false;
+		}else blockMoveEvents.current = false;
 		event.preventDefault();
 	}
 
 	function updateGameStateAfterAnimation(){
-		if (!blockOtherEvents.current) return; // no tile movement occured so no need to update tile state
+		if (!blockMoveEvents.current) return; // no tile movement occured so no need to update tile state
 		let [newUpdatedTilesData, newScores, winState] = updateGameState(tilesData, scores, freeRenderingSlots.current)
-		blockOtherEvents.current = false;
-		if (winState !== null) {
+		blockMoveEvents.current = false;
+
+		if (winState !== null) { // player won or lost. Game over regardless
 			localStorage.clear();
-			blockOtherEvents.current = true;
+			blockMoveEvents.current = true;
 			gameOver.current = true;
 		}
 		if (winState === "player won") {
@@ -136,18 +140,20 @@ function Main() {
 		}else if (winState === "player lost") {
 			playerWon.current = false;
 		}
+		localStorage.setItem("scores", JSON.stringify(newScores));
 		setScores(newScores);
 		setTilesData(newUpdatedTilesData);
 	}
 	
 	function setNewGameData() {
 		gameOver.current = false;
-		setScores({newScore: 0, bestScore: 0});
+		setScores({newScore: 0, bestScore: scores.bestScore});
 		freeRenderingSlots.current = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 		setTilesData(generateNewGameState);
-		gamePlayCount.current++;
-		blockOtherEvents.current = false;
+		gamePlayCount.current++; // will be passed as a key to GameTiles component to force a rerender
+		blockMoveEvents.current = false;
 		localStorage.clear();
+		localStorage.setItem("scores", JSON.stringify(scores));
 	}
 
 	return (

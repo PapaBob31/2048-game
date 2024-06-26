@@ -1,8 +1,10 @@
-import type { tileData } from "./main"
+import type { tileData, gameScores } from "./main"
 
-export function updateTilesMovementData(direction: "up"|"down"|"left"|"right", tilesData: tileData[]): [tileData[], boolean] {
+
+// returns initialisation data used to update tiles movement
+// data depending on the direction of movement
+function initDirectionParams(direction: "up"|"down"|"left"|"right") {
 	let startingIndex: number, rowStep: number, tileStep: number;
-	let changeOccured = false;
 
 	switch (direction) {
 		case "up":
@@ -25,29 +27,39 @@ export function updateTilesMovementData(direction: "up"|"down"|"left"|"right", t
 			rowStep = 4;
 			tileStep = 1;
 	}
+
+	return [startingIndex, rowStep, tileStep];
+}
+
+export function updateTilesMovementData(direction: "up"|"down"|"left"|"right", tilesData: tileData[]): [tileData[], boolean] {
+	let changeOccured = false; // indicates if at least one tile is allowed to move in the specified direction
+	let [startingIndex, rowStep, tileStep] = initDirectionParams(direction)
 	let loopCount=0, edgeIndex=startingIndex, n=startingIndex + tileStep;
 
 	while (true) {
 		if (loopCount !== 0 && loopCount % 3 === 0) {
-			startingIndex += rowStep;
-			edgeIndex = startingIndex;
+			// one row or column has been processed
+			startingIndex += rowStep; // change to the next row
+			edgeIndex = startingIndex; // index of tile position closest to the end of a row/column (i.e at the edge)
 			n = startingIndex + tileStep; // starts iteration at position after the position at the edge
 		}
 
 		if (tilesData[n].content) {
-			if (tilesData[edgeIndex].content === tilesData[n].content) {
+			if (tilesData[edgeIndex].content === tilesData[n].content) { // tile-n will be merged into tile-edgeIndex
 				tilesData[edgeIndex].combinedTileData = {
 					renderingIndex: tilesData[n].renderingIndex, 
 					content: tilesData[n].content as number
 				}
 			}else {
 				if (tilesData[edgeIndex].content) {
-					edgeIndex+=tileStep;
+					edgeIndex+=tileStep; // change it to the next tile index closest to the edge 
 				}
+				// update the content of edgeIndex's tile
 				tilesData[edgeIndex].renderingIndex = tilesData[n].renderingIndex;
 				tilesData[edgeIndex].content = tilesData[n].content
 			}
-			if (edgeIndex !== n) {
+			if (edgeIndex !== n) { // Occurs only if tile being processed and edgeIndex tile are adjacent in movement direction
+				// clear the former position content. The tile is in a new position
 				tilesData[n].renderingIndex = -1;
 				tilesData[n].content = null;
 				changeOccured = true;
@@ -58,7 +70,7 @@ export function updateTilesMovementData(direction: "up"|"down"|"left"|"right", t
 		}
 		loopCount++;
 		n+=tileStep;
-		if (loopCount === 12) break;
+		if (loopCount === 12) break; // 12 iterations since the first position of each row/column is never processed.
 	}
 	return [tilesData, changeOccured];
 }
@@ -88,7 +100,7 @@ export function generateInitialState() {
 		tilesPositionsData.push({
 			content: [randomNum1, randomNum2].includes(i) ? (Math.random() >= 0.2 ? 2 : 4) : null,
 			classAttr: `horz-${htc} vert-${vtc}`, // css class name
-			renderingIndex: [randomNum1, randomNum2].includes(i) ? availRenderingSlot : -1, // index of the tile when rendered in an array. also indicates tile will be rendered
+			renderingIndex: [randomNum1, randomNum2].includes(i) ? availRenderingSlot : -1, // Indicates tile will be rendered. Used in GameTile component
 			combinedTileData: null,
 		})
 		if (i === randomNum1 || i === randomNum2) {
@@ -98,7 +110,6 @@ export function generateInitialState() {
 	}
 	return tilesPositionsData;
 }
-
 
 // generates new game state i.e creates rendering data for 2 random tiles and 
 // removes every other tile data besides the two just created
@@ -130,6 +141,7 @@ export function generateNewGameState(prevGameTilesData: tileData[]) {
 	return prevGameTilesData
 }
 
+
 // checks if there are adjacent tiles with the same content
 function tilesCanStillMove(gameTilesData: tileData[]) {
 	for (let i=0; i<16; i++) {
@@ -146,8 +158,12 @@ function tilesCanStillMove(gameTilesData: tileData[]) {
 	return false;
 }
 
+
 type combinedTileData = {content: number, renderingIndex: number};
-function ensureUniqueKeyForNewTile(tilesData: tileData[], newTileIndex: number, removedTiles: combinedTileData[]) {
+
+// ensures that the renderingIndex-content combo for a new tile is unique and not the  same 
+// with a tile just removed as this combo would be used as the tile's key during the next render
+function ensureUniqueComboForNewTile(tilesData: tileData[], newTileIndex: number, removedTiles: combinedTileData[]) {
 	removedTiles.forEach(tile => {
 		if (tile.renderingIndex === tilesData[newTileIndex].renderingIndex) {
 			let newContent = tilesData[newTileIndex].content
@@ -161,7 +177,8 @@ function ensureUniqueKeyForNewTile(tilesData: tileData[], newTileIndex: number, 
 	return tilesData;
 }
 
-// Updates tile data if at least one tile is to be added/merged to another
+// Updates tile data by adding a new tile and updating the content of a tile that 
+// another tile has been merged/added to
 export function updateGameState(tilesData: tileData[], currGameScores: gameScores, emptyRenderSlots: number[]){
 	let emptyTileIndexes = [];
 	let newScoreObj = {...currGameScores};
@@ -173,8 +190,8 @@ export function updateGameState(tilesData: tileData[], currGameScores: gameScore
 			emptyTileIndexes.push(i)
 			continue;
 		}
-		tilesData[i].classAttr = tilesData[i].classAttr.slice(0, 13)
-		if (tilesData[i].combinedTileData !== null) {
+
+		if (tilesData[i].combinedTileData) {
 			(tilesData[i].content as number) *= 2;
 			emptyRenderSlots.push((tilesData[i].combinedTileData as combinedTileData).renderingIndex);
 			removedTilesData.push(tilesData[i].combinedTileData as combinedTileData)
@@ -191,12 +208,12 @@ export function updateGameState(tilesData: tileData[], currGameScores: gameScore
 		let newTileIndex: number = emptyTileIndexes[Math.floor(Math.random() * emptyTileIndexes.length)];
 		tilesData[newTileIndex].content = Math.random() >= 0.2 ? 2 : 4;
 		tilesData[newTileIndex].renderingIndex = emptyRenderSlots.shift() as number;
-		newUpdatedTilesData = ensureUniqueKeyForNewTile(newUpdatedTilesData, newTileIndex, removedTilesData);
+		newUpdatedTilesData = ensureUniqueComboForNewTile(newUpdatedTilesData, newTileIndex, removedTilesData);
 	}
 	
 	if (emptyRenderSlots.length === 0 && !tilesCanStillMove(tilesData)) {
 		winState = "player lost"
 	}
 
-	return [newUpdatedTilesData, newScoreObj, winState]	
+	return [newUpdatedTilesData, newScoreObj, winState];
 }
