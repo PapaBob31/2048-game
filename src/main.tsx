@@ -132,6 +132,7 @@ function Main() {
 
 		if (winState !== null) { // player won or lost. Game over regardless
 			localStorage.clear();
+			localStorage.setItem("scores", JSON.stringify({...newScores as gameScores, newScore: 0})); // store only best score
 			blockMoveEvents.current = true;
 			gameOver.current = true;
 		}
@@ -140,8 +141,7 @@ function Main() {
 		}else if (winState === "player lost") {
 			playerWon.current = false;
 		}
-		localStorage.setItem("scores", JSON.stringify(newScores));
-		setScores(newScores);
+		setScores(newScores); // display current scores
 		setTilesData(newUpdatedTilesData);
 	}
 	
