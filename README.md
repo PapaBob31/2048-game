@@ -9,3 +9,7 @@ This is a Recreation of the 2048 game built with **React** and **Typescript**
 This project was scaffolded with [vite](https://vitejs.dev)
 
 You can visit the live site [here](https://2o48-game.netlify.app)
+<-- hidden -->
+1) ol list 1
+2) ol list 2
+   *********
